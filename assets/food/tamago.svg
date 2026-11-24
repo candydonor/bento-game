@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="egg" x2=".65" y2="1">
+      <stop stop-color="#ffef88"/><stop offset=".59" stop-color="#fbd151"/><stop offset="1" stop-color="#e6a139"/>
+    </linearGradient>
+    <linearGradient id="rice" x2=".4" y2="1">
+      <stop stop-color="#fff8db"/><stop offset="1" stop-color="#e4cc9d"/>
+    </linearGradient>
+    <linearGradient id="seaweed" x2="1" y2="1">
+      <stop stop-color="#66845e"/><stop offset=".47" stop-color="#3d5a47"/><stop offset="1" stop-color="#263932"/>
+    </linearGradient>
+    <g id="piece">
+      <path d="M3 13c2-4 7-5 11-5l24 1c5 0 7 2 7 6v7c0 6-3 9-8 9H13c-7 0-10-3-10-8Z" fill="url(#rice)" stroke="#c2a478" stroke-width="1.1"/>
+      <path d="m8 24 2 1m4 .6 2-.2m-5 3 1.5.4m7-1 1.5 .6m13-3 2-.3m2 2.3 2-.5" stroke="#b89970" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+      <path d="M2 8c0-4 4-7 9-7h25c6 0 10 3 10 7v12c-1 3-4 4-10 4H10c-6 0-8-2-8-6Z" fill="url(#egg)" stroke="#d19436" stroke-width="1.3"/>
+      <path d="M3 10c2 3 5 4 9 4h24c4 0 7-1 9-4" fill="none" stroke="#edb344" stroke-width="1.6"/>
+      <path d="M4 7c1-3 4-4 8-4h22m-28 12c1 1 3 2 6 2h6m15-.3h4c3 0 5-.5 6-1.7m-35 4c1 .8 3 1 5 1h6m14 .3h4c3 0 4-.8 6-1.5" fill="none" stroke="#fff3a1" stroke-width="1.65" stroke-linecap="round" opacity=".78"/>
+      <path d="m18.5 1 10.8.1c1.1 5 2 9 1.7 14.9l-.7 15-10.5.1.5-14.6c0-6-.4-10.3-1.8-15.5Z" fill="url(#seaweed)" stroke="#3f5b46" stroke-width="1.1"/>
+      <path d="m22 3.2 4.7.1m-3.2 3 .4 4.4m4.1 3-.1 4m-4.7 5-.1 4m4.1-1 .1 2.5" stroke="#a0ad73" opacity=".52" stroke-width="1.45" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <ellipse cx="32" cy="53" rx="27" ry="6" fill="#623720" opacity=".16"/>
+  <use href="#piece" transform="translate(19 8) scale(.88) rotate(11 24 15)"/>
+  <use href="#piece" transform="translate(5 26) rotate(-10 24 15)"/>
+</svg>

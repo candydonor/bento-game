@@ -67,7 +67,7 @@ svg { display: block; width: 24px; height: 24px; flex: none; }
   box-shadow: 0 2px 0 #ad57531a, inset 0 1px #fff9f4;
   transition: background .15s, transform .15s;
 }
-.icon-button svg { width: 22px; height: 22px; }
+.icon-button svg { width: 25px; height: 25px; }
 .icon-button:hover { background: #fff5ed; }
 .icon-button:active { transform: translateY(1px); }
 .menu-heading { text-align: center; margin: -9px 0 0; z-index: 1; }
@@ -84,7 +84,7 @@ svg { display: block; width: 24px; height: 24px; flex: none; }
   background: #fff5ef9c;
   box-shadow: 0 3px 8px #ab596026;
 }
-.brand-icon svg { width: 22px; height: 22px; }
+.brand-icon svg { width: 25px; height: 25px; }
 .menu-heading h1 {
   margin: 0;
   color: #5d342e;
@@ -201,7 +201,7 @@ svg { display: block; width: 24px; height: 24px; flex: none; }
   font-weight: 850;
   transition: background .14s, transform .14s, box-shadow .14s;
 }
-.button svg { width: 19px; height: 19px; }
+.button svg { width: 22px; height: 22px; }
 .button:active { transform: translateY(2px); }
 .primary {
   color: #fffbf4;
@@ -217,7 +217,8 @@ svg { display: block; width: 24px; height: 24px; flex: none; }
 .menu-start { position: relative; min-height: 52px; font-size: 17px; }
 .menu-start svg:last-child { position: absolute; right: 14px; opacity: .9; }
 .menu-levels { margin: 17px 1px 0; }
-.menu-levels h2 { margin: 0 0 6px 4px; color: #654437; font-size: 15px; font-weight: 900; }
+.level-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px 4px; }
+.level-heading h2 { margin: 0; color: #654437; font-size: 15px; font-weight: 900; }
 .level-list { display: grid; gap: 6px; }
 .level-row {
   display: grid;
@@ -250,7 +251,7 @@ svg { display: block; width: 24px; height: 24px; flex: none; }
 .level-detail strong { font-size: 14px; font-weight: 900; }
 .level-detail small { font-size: 11px; font-weight: 730; color: #795b4f; }
 .level-marker { color: #8d4a5b; }
-.level-marker svg { width: 18px; height: 18px; }
+.level-marker svg { width: 21px; height: 21px; }
 .level-marker.completed { color: #4e6e43; }
 .level-row:disabled .level-marker { color: #846659; }
 .skip-training {

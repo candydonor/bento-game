@@ -24,6 +24,7 @@ type LevelLayout = Pick<Level, 'id' | 'name' | 'description' | 'orders'> & {
   layout: TrayLayout[]
   phases: [number, number, number, number]
   rowsPerGroup: number
+  speed?: number
 }
 
 const columns = [0, 1, 2, 3] as const
@@ -95,8 +96,63 @@ const main: LevelLayout = {
   ],
 }
 
+const extendedLevels = [
+  { id: 3, name: 'Обеденный час', orderCount: 140, speed: 17 },
+  { id: 4, name: 'Полный зал', orderCount: 220, speed: 19 },
+  { id: 5, name: 'Вечерняя смена', orderCount: 320, speed: 21 },
+  { id: 6, name: 'Праздничный стол', orderCount: 450, speed: 23 },
+  { id: 7, name: 'Большой банкет', orderCount: 600, speed: 25 },
+]
+
+function extendedLayout({ id, name, orderCount, speed }: typeof extendedLevels[number]): LevelLayout {
+  const foodTypes = Object.keys(foodNames) as FoodType[]
+  const orderStrides = [1, 5, 7, 11]
+  const orders = Array.from({ length: orderCount }, (_, index) => {
+    // Each full round serves all twelve dishes. A round changes its starting
+    // dish and traversal order, so the queues can differ between levels.
+    const round = Math.floor(index / foodTypes.length)
+    const stride = orderStrides[(round + id) % orderStrides.length]
+    return foodTypes[(id * 2 + round * 5 + index % foodTypes.length * stride) % foodTypes.length]
+  })
+
+  // Keep the belts short even for the longest queues by using deeper trays.
+  const rowCount = 6
+  const trayCount = rowCount * columns.length
+  const itemCount = orderCount * ITEMS_PER_ORDER
+  const baseCapacity = Math.floor(itemCount / trayCount)
+  const extraItems = itemCount % trayCount
+  const layout = Array.from({ length: trayCount }, (_, index): TrayLayout => {
+    const row = Math.floor(index / columns.length)
+    const columnIndex = columns[index % columns.length]
+    const extra = (index * 5 + id * 11) % trayCount < extraItems ? 1 : 0
+    const capacity = baseCapacity + extra
+    const layers: Slot[][] = []
+    let remaining = capacity
+    while (remaining > 0) {
+      const depth = layers.length
+      const preferredCount = (depth + row + columnIndex) % 5 === 1 ? 2 : 3
+      const count = Math.min(remaining, preferredCount)
+      const first = (id + row * 2 + columnIndex + depth) % slots.length
+      layers.push(Array.from({ length: count }, (_, slot) => slots[(first + slot) % slots.length]))
+      remaining -= count
+    }
+    return { columnIndex, baseY: row * TRAY_PITCH, slots: layers }
+  })
+
+  return {
+    id,
+    name,
+    description: `Двенадцать блюд и ${orderCount} заказов.`,
+    layout,
+    phases: [10 + id, 31 - id, 6 + id, 26 + id],
+    rowsPerGroup: 1,
+    speed,
+    orders,
+  }
+}
+
 function buildLevel(config: LevelLayout): Level {
-  const { id, name, description, layout, orders, phases, rowsPerGroup } = config
+  const { id, name, description, layout, orders, phases, rowsPerGroup, speed = 15 } = config
   const trays: Tray[] = layout.map(({ columnIndex, baseY, slots }, index) => ({
     id: `${id}-tray-${index + 1}`,
     columnIndex,
@@ -107,7 +163,7 @@ function buildLevel(config: LevelLayout): Level {
   const movingColumns: ColumnConfig[] = columns.map(index => ({
     index,
     direction: index % 2 === 0 ? -1 : 1,
-    speed: 15,
+    speed,
     initialOffset: phases[index],
   }))
 
@@ -147,4 +203,4 @@ function buildLevel(config: LevelLayout): Level {
   return { id, name, description, trays, columns: movingColumns, orders, witness }
 }
 
-export const levels = [buildLevel(tutorial), buildLevel(main)]
+export const levels = [tutorial, main, ...extendedLevels.map(extendedLayout)].map(buildLevel)

@@ -9,10 +9,10 @@ import { readPreferences, savePreferences } from './preferences.ts';
 import { mountScene } from './scene.ts';
 
 const images = {
-  maki: new URL('../assets/food/maki.svg', import.meta.url).href,
-  onigiri: new URL('../assets/food/onigiri.svg', import.meta.url).href,
-  tamago: new URL('../assets/food/tamago.svg', import.meta.url).href,
-  dango: new URL('../assets/food/dango.svg', import.meta.url).href,
+  maki: new URL('../assets/food/maki.webp', import.meta.url).href,
+  onigiri: new URL('../assets/food/onigiri.webp', import.meta.url).href,
+  tamago: new URL('../assets/food/tamago.webp', import.meta.url).href,
+  dango: new URL('../assets/food/dango.webp', import.meta.url).href,
 };
 
 const tutorialHints = [
@@ -26,7 +26,7 @@ const rules = 'Собери по три одинаковых блюда для �
 
 const screen = document.querySelector<HTMLElement>('#screen')!;
 const overlay = document.querySelector<HTMLElement>('#overlay-root')!;
-const preferences = readPreferences();
+const preferences = readPreferences(levels.map(level => level.id));
 const audio = createAudio(preferences.sound);
 let scene: ReturnType<typeof mountScene> | null = null;
 let activeLevel = 0;
@@ -42,7 +42,10 @@ function soundButton() {
 }
 
 function isUnlocked(index: number) {
-  return index === 0 || preferences.tutorialSkipped || preferences.completed.includes(1) || preferences.completed.includes(2);
+  const level = levels[index];
+  if (!level) return false;
+  if (index === 0 || (index === 1 && preferences.tutorialSkipped)) return true;
+  return preferences.completed.includes(level.id) || preferences.completed.includes(levels[index - 1].id);
 }
 
 function showMenu() {
@@ -52,15 +55,18 @@ function showMenu() {
   tutorial = false;
   document.documentElement.dataset.screen = 'menu';
   const mainUnlocked = isUnlocked(1);
-  const recommended = mainUnlocked ? 1 : 0;
+  const next = levels.findIndex((level, index) => isUnlocked(index)
+    && !preferences.completed.includes(level.id)
+    && (index !== 0 || !preferences.tutorialSkipped));
+  const recommended = next >= 0 ? next : levels.length - 1;
   const levelButtons = levels.map((level, index) => {
     const unlocked = isUnlocked(index);
     const completed = preferences.completed.includes(level.id);
     const marker = completed ? icon('check') : unlocked ? icon('arrow') : icon('lock');
-    const title = index === 0 ? 'Первые заказы' : 'Большая смена';
-    return `<button class="level-row" type="button" data-command="level" data-level="${index}" ${unlocked ? '' : 'disabled aria-describedby="skip-training"'}>
+    const title = index === 0 ? 'Первые заказы' : index === 1 ? 'Большая смена' : level.name;
+    return `<button class="level-row" type="button" data-command="level" data-level="${index}" ${unlocked ? '' : 'disabled'}>
       <span class="level-number">${String(level.id).padStart(2, '0')}</span>
-      <span class="level-detail"><strong>${title}</strong><small>${index === 0 ? 'Обучение' : 'Основной уровень'} · ${level.orders.length} заказов</small></span>
+      <span class="level-detail"><strong>${title}</strong><small>${index === 0 ? 'Обучение · ' : ''}${level.orders.length} заказов</small></span>
       <span class="level-marker ${completed ? 'completed' : ''}">${marker}</span>
     </button>`;
   }).join('');
@@ -91,12 +97,14 @@ function showMenu() {
       </div>
       <div class="menu-panel">
         <button class="button primary menu-start" type="button" data-command="level" data-level="${recommended}">
-          ${icon('play')} <span>${mainUnlocked ? 'Играть' : 'Начать игру'}</span> ${icon('arrow')}
+          ${icon('play')} <span>${mainUnlocked ? `Играть · уровень ${levels[recommended].id}` : 'Начать игру'}</span> ${icon('arrow')}
         </button>
         <section class="menu-levels" aria-labelledby="levels-title">
-          <h2 id="levels-title">Уровни</h2>
+          <div class="level-heading">
+            <h2 id="levels-title">Уровни</h2>
+            ${mainUnlocked ? '' : '<button class="skip-training" type="button" data-command="skip-training">Пропустить обучение</button>'}
+          </div>
           <div class="level-list">${levelButtons}</div>
-          ${mainUnlocked ? '' : '<button class="skip-training" id="skip-training" type="button" data-command="skip-training">Пропустить обучение</button>'}
         </section>
       </div>
     </section>`;

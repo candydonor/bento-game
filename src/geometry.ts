@@ -3,7 +3,7 @@ import { activeLayer, LOGICAL_WIDTH, trayY, type FoodItem, type Game, type Tray 
 export const TRAY_WIDTH = 88;
 export const TRAY_HEIGHT = 58;
 export const PREVIEW_Y = 59;
-export const PREVIEW_HEIGHT = 21;
+export const PREVIEW_HEIGHT = 23;
 const TRAY_INSET = 5;
 const SLOT_WIDTH = (TRAY_WIDTH - TRAY_INSET * 2) / 3;
 

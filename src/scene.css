@@ -115,8 +115,8 @@
 
 .game-pause::before {
   content: '';
-  width: 35px;
-  height: 35px;
+  width: 37px;
+  height: 37px;
   border: 1px solid #fff;
   border-radius: 12px;
   background: #fff7ed;
@@ -131,7 +131,7 @@
   outline-offset: -3px;
 }
 
-.game-pause svg { position: relative; width: 17px; height: 17px; }
+.game-pause svg { position: relative; width: 20px; height: 20px; }
 
 .game-orders {
   display: grid;
@@ -143,11 +143,11 @@
   position: relative;
   display: grid;
   align-items: center;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   justify-items: center;
   min-width: 0;
-  height: clamp(63px, 19vw, 86px);
-  padding: 8px 2px 5px;
+  height: clamp(77px, 22vw, 103px);
+  padding: 6px 2px 5px;
   box-sizing: border-box;
   border: 1px solid #fffdfa;
   border-radius: 16px;
@@ -172,23 +172,27 @@
 .game-order-food {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: stretch;
   width: 100%;
-  align-items: center;
 }
 
 .game-order-item {
-  display: grid;
-  place-items: center;
-  min-width: 0;
+  position: absolute;
+  top: 29%;
+  width: min(44%, 44px);
   aspect-ratio: 1;
+  transform: translate(-50%, -50%);
 }
+
+.game-order-item:first-child { left: 24%; }
+.game-order-item:nth-child(2) { left: 76%; }
+.game-order-item:last-child { left: 50%; top: 73%; }
 
 .game-order-item img {
   display: block;
-  width: 116%;
-  max-width: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   pointer-events: none;
   opacity: .36;
   filter: saturate(.7);
@@ -214,7 +218,7 @@
   position: relative;
   z-index: 1;
   flex: none;
-  min-height: 57px;
+  min-height: 62px;
   padding: 3px 0 6px;
   border-top: 1px solid #f7dcaf;
   border-bottom: 3px solid #9e6242;
@@ -227,10 +231,10 @@
 .game-storage {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(5px, 3vw, 14px);
-  max-width: 290px;
-  width: 73%;
-  height: 40px;
+  gap: clamp(5px, 2.6vw, 13px);
+  max-width: 322px;
+  width: 83%;
+  height: 46px;
   margin: 0 auto;
   justify-items: center;
 }
@@ -240,8 +244,8 @@
   display: grid;
   place-items: center;
   width: 100%;
-  max-width: 45px;
-  height: 40px;
+  max-width: 53px;
+  height: 46px;
 }
 
 .game-storage-slot::before,
@@ -256,8 +260,8 @@
 
 .game-storage-slot::before {
   width: 100%;
-  height: 31px;
-  max-width: 42px;
+  height: 37px;
+  max-width: 50px;
   background: linear-gradient(#fffdf4, #faf0df);
   border: 1px solid #fffaf0;
   box-sizing: border-box;
@@ -266,18 +270,21 @@
 
 .game-storage-slot::after {
   width: 72%;
-  height: 20px;
-  max-width: 29px;
+  height: 24px;
+  max-width: 35px;
   border: 1px solid #ece1ce;
   background: #f5e9d8;
   box-shadow: inset 0 2px 3px #b995722b;
 }
 
 .game-storage-slot img {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  width: 91%;
-  max-width: 38px;
+  top: 50%;
+  left: 50%;
+  width: min(110%, 52px);
+  max-width: none;
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
@@ -374,9 +381,12 @@
 @media (max-height: 520px) {
   .game-hud { padding-bottom: 6px; }
   .game-hud-top { margin-bottom: 0; }
-  .game-order { height: 55px; padding-top: 4px; }
-  .game-order-item img { max-height: 30px; object-fit: contain; }
-  .game-shelf { min-height: 53px; padding: 0 0 3px; }
+  .game-order { height: 57px; padding-top: 4px; }
+  .game-order-item { top: 50%; width: min(35%, 32px); }
+  .game-order-item:first-child { left: 17%; }
+  .game-order-item:nth-child(2) { left: 50%; }
+  .game-order-item:last-child { left: 83%; top: 50%; }
+  .game-shelf { min-height: 55px; padding: 0 0 3px; }
   .game-hint { padding-top: 4px; padding-bottom: 4px; }
 }
 

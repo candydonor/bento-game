@@ -7,7 +7,7 @@ type Preferences = {
 
 const storageKey = 'bento-orders.preferences.v1';
 
-export function readPreferences(): Preferences {
+export function readPreferences(levelIds: readonly number[]): Preferences {
   const defaults: Preferences = { sound: true, tutorialSeen: false, tutorialSkipped: false, completed: [] };
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
@@ -17,7 +17,7 @@ export function readPreferences(): Preferences {
       tutorialSeen: saved.tutorialSeen === true,
       tutorialSkipped: saved.tutorialSkipped === true,
       completed: Array.isArray(saved.completed)
-        ? [...new Set<number>(saved.completed.filter((id: unknown) => id === 1 || id === 2))]
+        ? [...new Set<number>(saved.completed.filter((id: unknown) => typeof id === 'number' && levelIds.includes(id)))]
         : [],
     };
   } catch {

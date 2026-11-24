@@ -29,10 +29,17 @@ type Sequence = {
   flightSource: Point;
 };
 
+const TRAY_FOOD_SIZE = 39;
+const PREVIEW_FOOD_SIZE = 25;
+
+function foodOffsetY(slot: number): number {
+  return slot === 1 ? 8 : -8;
+}
+
 const images = new Map<FoodType, HTMLImageElement>();
 const urls = new Map<FoodType, string>();
 for (const type of Object.keys(foodNames) as FoodType[]) {
-  const url = new URL(`../assets/food/${type}.svg`, import.meta.url).href;
+  const url = new URL(`../assets/food/${type}.webp`, import.meta.url).href;
   urls.set(type, url);
 }
 
@@ -191,7 +198,10 @@ function easeOut(value: number) {
 }
 
 function pointForSlot(slot: ProjectedSlot): Point {
-  return { x: slot.x + slot.width / 2, y: slot.y + slot.height / 2 };
+  return {
+    x: slot.x + slot.width / 2,
+    y: slot.y + slot.height / 2 - 1.5 + foodOffsetY(slot.slot),
+  };
 }
 
 export function mountScene(container: HTMLElement, options: SceneOptions) {
@@ -302,7 +312,7 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       if (preview) {
         boardContext.drawImage(previewArt, x - 3, y + PREVIEW_Y - 2, TRAY_WIDTH + 6, PREVIEW_HEIGHT + 7);
         preview.forEach((item, slot) => {
-          if (item) drawFood(boardContext, item, x + slotCenter(slot), y + PREVIEW_Y + PREVIEW_HEIGHT / 2 - 1, 19);
+          if (item) drawFood(boardContext, item, x + slotCenter(slot), y + PREVIEW_Y + PREVIEW_HEIGHT / 2 - 1, PREVIEW_FOOD_SIZE);
         });
       }
       if (!active || suppress) continue;
@@ -312,18 +322,18 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       for (const [slot, item] of active.entries()) {
         if (!item) continue;
         const centerX = x + slotCenter(slot);
-        const centerY = y + TRAY_HEIGHT / 2 - 1.5;
+        const centerY = y + TRAY_HEIGHT / 2 - 1.5 + foodOffsetY(slot);
         const keyboardSelected = keyboardId === item.id && document.activeElement === board;
         if (keyboardSelected) {
           boardContext.lineWidth = 2;
           boardContext.strokeStyle = '#8c3756';
           boardContext.beginPath();
-          boardContext.roundRect(centerX - 11.5, centerY - 20, 23, 40, 4);
+          boardContext.roundRect(centerX - 11.5, y + 7, 23, TRAY_HEIGHT - 15, 4);
           boardContext.stroke();
         }
         const press = gesture?.itemId === item.id ? easeOut(Math.min(1, (runningTime - gesture.started) / 90)) : 0;
         boardContext.globalAlpha = motionPreference.matches ? 1 : .25 + grow * .75;
-        drawFood(boardContext, item, centerX, centerY, (34 - 5 * press) * (.9 + grow * .1));
+        drawFood(boardContext, item, centerX, centerY, (TRAY_FOOD_SIZE - 6 * press) * (.9 + grow * .1));
         boardContext.globalAlpha = 1;
       }
     }
@@ -352,7 +362,11 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       const x = start.x + (target.x - bounds.left - start.x) * position;
       const lift = reduced ? 0 : Math.min(59, Math.abs(target.y - bounds.top - start.y) * .24);
       const y = start.y + (target.y - bounds.top - start.y) * position - lift * Math.sin(Math.PI * position);
-      const size = 34 * scale * (1.06 - .23 * position);
+      const fromSize = event.from.kind === 'tray'
+        ? TRAY_FOOD_SIZE * scale
+        : storageImages[event.from.slot].getBoundingClientRect().width;
+      const toSize = event.to.kind === 'order' ? targetRect.width : targetRect.width * 1.1;
+      const size = fromSize + (toSize - fromSize) * position;
       drawFood(context, event.item, x, y, size, (reduced ? 0 : .23) * Math.sin(Math.PI * position));
     }
 

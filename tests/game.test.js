@@ -393,7 +393,11 @@ function waitForWitnessItem(game, id, height) {
     const slot = slots.find(candidate => candidate.item.id === id);
     if (slot) {
       const point = visibleCenter(slot, height);
-      if (hitTest(slots, point, height)?.item.id === id) return true;
+      if (hitTest(slots, point, height)?.item.id === id) {
+        const gesture = { ...point, itemId: id };
+        advanceTime(game, 20);
+        if (matchesTap(gesture, point, point, projectTrays(game, height), height)) return true;
+      }
     }
     advanceTime(game, stepMs);
   }
@@ -401,22 +405,28 @@ function waitForWitnessItem(game, id, height) {
 }
 
 const expectedLevels = [
-  { tr: 8, foods: 6, items: 36, orders: 12, minLayers: 1, maxLayers: 2 },
-  { tr: 40, foods: 12, items: 240, orders: 80, minLayers: 2, maxLayers: 4 },
+  { trays: 8, foods: 6, orders: 12, minLayers: 1, maxLayers: 2 },
+  { trays: 40, foods: 12, orders: 80, minLayers: 2, maxLayers: 4 },
+  ...[140, 220, 320, 450, 600].map(orders => ({ trays: 24, foods: 12, orders, minLayers: 2 })),
 ];
+
+test('all seven levels are present in progression order', () => {
+  assert.deepEqual(levels.map(level => level.id), [1, 2, 3, 4, 5, 6, 7]);
+});
 
 for (const [index, expected] of expectedLevels.entries()) {
   test(`level ${index + 1} has the specified inventory and completes its witness through visible taps`, () => {
     const level = levels[index];
     const items = allFood(level.trays);
-    assert.equal(level.trays.length, expected.tr);
+    const expectedItems = 3 * expected.orders;
+    assert.equal(level.trays.length, expected.trays);
     assert.deepEqual(level.columns.map(column => column.direction), directions);
-    assert.equal(items.length, expected.items);
-    assert.equal(new Set(items.map(item => item.id)).size, expected.items);
+    assert.equal(items.length, expectedItems);
+    assert.equal(new Set(items.map(item => item.id)).size, expectedItems);
     assert.equal(level.orders.length, expected.orders);
     assert.equal(new Set(level.orders).size, expected.foods);
-    assert.equal(level.witness.length, expected.items);
-    assert.equal(new Set(level.witness).size, expected.items);
+    assert.equal(level.witness.length, expectedItems);
+    assert.equal(new Set(level.witness).size, expectedItems);
 
     const types = new Set([...items.map(item => item.type), ...level.orders]);
     for (const type of types) {
@@ -424,7 +434,8 @@ for (const [index, expected] of expectedLevels.entries()) {
         3 * level.orders.filter(foodType => foodType === type).length);
     }
     for (const itemTray of level.trays) {
-      assert.ok(itemTray.layers.length >= expected.minLayers && itemTray.layers.length <= expected.maxLayers);
+      assert.ok(itemTray.layers.length >= expected.minLayers);
+      if (expected.maxLayers !== undefined) assert.ok(itemTray.layers.length <= expected.maxLayers);
       assert.ok(itemTray.layers.every(layer => layer.length === 3));
     }
 

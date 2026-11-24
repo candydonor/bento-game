@@ -48,11 +48,11 @@ export type FoodType = keyof typeof foodNames
 
 type Slot = 0 | 1 | 2
 type TrayLayout = Pick<Tray, 'columnIndex' | 'baseY'> & { slots: Slot[][] }
+type ColumnPhases = [number, number, number, number]
 type LevelLayout = Pick<Level, 'id' | 'name' | 'description' | 'orders'> & {
   layout: TrayLayout[]
-  phases: [number, number, number, number]
+  phases: ColumnPhases
   rowsPerGroup: number
-  speed?: number
 }
 
 const columns = [0, 1, 2, 3] as const
@@ -132,55 +132,89 @@ const extendedLevels = [
   { id: 7, name: 'Большой банкет', orderCount: 600, foodCount: 35, speed: 25 },
 ]
 
-function extendedLayout({ id, name, orderCount, foodCount, speed }: typeof extendedLevels[number]): LevelLayout {
-  const foodTypes = (Object.keys(foodNames) as FoodType[]).slice(0, foodCount)
-  const orderStrides = [1, 11, 13, 17, 19]
-  const orders = Array.from({ length: orderCount }, (_, index) => {
-    // These traversal steps are coprime to each menu size, so a full round
-    // serves every dish once before its starting dish and step change.
-    const round = Math.floor(index / foodTypes.length)
-    const stride = orderStrides[(round + id) % orderStrides.length]
-    return foodTypes[(id * 2 + round * 5 + index % foodTypes.length * stride) % foodTypes.length]
-  })
+function buildColumns(phases: ColumnPhases, speed: number): ColumnConfig[] {
+  return columns.map(index => ({
+    index,
+    direction: index % 2 === 0 ? -1 : 1,
+    speed,
+    initialOffset: phases[index],
+  }))
+}
 
-  // Keep the belts short even for the longest queues by using deeper trays.
-  const rowCount = 6
-  const trayCount = rowCount * columns.length
-  const itemCount = orderCount * ITEMS_PER_ORDER
-  const baseCapacity = Math.floor(itemCount / trayCount)
-  const extraItems = itemCount % trayCount
-  const layout = Array.from({ length: trayCount }, (_, index): TrayLayout => {
-    const row = Math.floor(index / columns.length)
-    const columnIndex = columns[index % columns.length]
-    const extra = (index * 5 + id * 11) % trayCount < extraItems ? 1 : 0
-    const capacity = baseCapacity + extra
-    const layers: Slot[][] = []
-    let remaining = capacity
-    while (remaining > 0) {
-      const depth = layers.length
-      const preferredCount = (depth + row + columnIndex) % 5 === 1 ? 2 : 3
-      const count = Math.min(remaining, preferredCount)
-      const first = (id + row * 2 + columnIndex + depth) % slots.length
-      layers.push(Array.from({ length: count }, (_, slot) => slots[(first + slot) % slots.length]))
-      remaining -= count
+function addExtendedOrder(tray: Tray, type: FoodType, orderIndex: number, witness: string[]): void {
+  const split = (orderIndex + tray.columnIndex) % 6 === 0
+  const counts = split ? [1, 2] : [ITEMS_PER_ORDER]
+  for (const count of counts) {
+    const depth = tray.layers.length
+    const layer: Layer = [null, null, null]
+    const firstSlot = (depth + tray.columnIndex) % slots.length
+    for (let index = 0; index < count; index += 1) {
+      const slot = slots[(firstSlot + index) % slots.length]
+      const id = `${tray.id}-${depth}-${slot}`
+      layer[slot] = { id, type }
+      witness.push(id)
     }
-    return { columnIndex, baseY: row * TRAY_PITCH, slots: layers }
-  })
+    tray.layers.push(layer)
+  }
+}
+
+function buildExtendedLevel({ id, name, orderCount, foodCount, speed }: typeof extendedLevels[number]): Level {
+  const foodTypes = (Object.keys(foodNames) as FoodType[]).slice(0, foodCount)
+  // Eleven is coprime to every extended menu size. Starting near the end
+  // brings some of the newly introduced dishes into the first course.
+  const menu = foodTypes.map((_, index) => foodTypes[(foodCount - 1 - id % 3 + index * 11) % foodCount])
+  const ordersPerDish = Math.floor(orderCount / foodCount)
+  const extraOrders = orderCount % foodCount
+  const courseSize = 6
+  const trays: Tray[] = Array.from({ length: courseSize }, (_, row) => columns.map(columnIndex => ({
+    id: `${id}-tray-${row * columns.length + columnIndex + 1}`,
+    columnIndex,
+    baseY: row * TRAY_PITCH,
+    activeLayerIndex: 0,
+    layers: [],
+  }))).flat()
+  const orders: FoodType[] = []
+  const witness: string[] = []
+
+  for (let start = 0; start < menu.length; start += courseSize) {
+    const course = menu.slice(start, start + courseSize)
+    const traysByDish = course.map((): Tray[] => [])
+    for (const [index, tray] of trays.entries()) {
+      const row = Math.floor(index / columns.length)
+      const dishIndex = (row + tray.columnIndex * 2 + start / courseSize) % course.length
+      traysByDish[dishIndex].push(tray)
+    }
+
+    // Each tray has a single dish per course. A deeper dish can only be
+    // blocked by its own copies or by an earlier course already in the queue.
+    for (let round = 0; round <= ordersPerDish; round += 1) {
+      for (let index = 0; index < course.length; index += 1) {
+        const dishIndex = (index + round) % course.length
+        const hasExtraOrder = start + dishIndex < extraOrders
+        if (round === ordersPerDish && !hasExtraOrder) continue
+
+        const type = course[dishIndex]
+        const availableTrays = traysByDish[dishIndex]
+        const tray = availableTrays[round % availableTrays.length]
+        addExtendedOrder(tray, type, orders.length, witness)
+        orders.push(type)
+      }
+    }
+  }
 
   return {
     id,
     name,
     description: `${foodCount} видов еды и ${orderCount} заказов.`,
-    layout,
-    phases: [10 + id, 31 - id, 6 + id, 26 + id],
-    rowsPerGroup: 1,
-    speed,
+    trays,
+    columns: buildColumns([10 + id, 31 - id, 6 + id, 26 + id], speed),
     orders,
+    witness,
   }
 }
 
 function buildLevel(config: LevelLayout): Level {
-  const { id, name, description, layout, orders, phases, rowsPerGroup, speed = 15 } = config
+  const { id, name, description, layout, orders, phases, rowsPerGroup } = config
   const trays: Tray[] = layout.map(({ columnIndex, baseY, slots }, index) => ({
     id: `${id}-tray-${index + 1}`,
     columnIndex,
@@ -188,13 +222,6 @@ function buildLevel(config: LevelLayout): Level {
     activeLayerIndex: 0,
     layers: slots.map((): Layer => [null, null, null]),
   }))
-  const movingColumns: ColumnConfig[] = columns.map(index => ({
-    index,
-    direction: index % 2 === 0 ? -1 : 1,
-    speed,
-    initialOffset: phases[index],
-  }))
-
   // Reserve one item from the first queued order for an early trip to storage.
   // The rest of the solution follows the finite order queue.
   const firstQueued = ORDER_SLOTS
@@ -228,7 +255,7 @@ function buildLevel(config: LevelLayout): Level {
   }
   if (witness.length !== solutionTypes.length) throw new Error(`Too few food positions in level ${id}`)
 
-  return { id, name, description, trays, columns: movingColumns, orders, witness }
+  return { id, name, description, trays, columns: buildColumns(phases, 15), orders, witness }
 }
 
-export const levels = [tutorial, main, ...extendedLevels.map(extendedLayout)].map(buildLevel)
+export const levels = [buildLevel(tutorial), buildLevel(main), ...extendedLevels.map(buildExtendedLevel)]

@@ -52,6 +52,7 @@ function showMenu() {
   closeDialog(false);
   scene?.destroy();
   scene = null;
+  audio.stopMusic();
   tutorial = false;
   document.documentElement.dataset.screen = 'menu';
   const mainUnlocked = isUnlocked(1);
@@ -127,7 +128,8 @@ function startLevel(index: number) {
   closeDialog(false);
   scene?.destroy();
   audio.silence();
-  audio.unlock();
+  audio.stopMusic();
+  audio.resumeMusic();
   document.documentElement.dataset.screen = 'game';
   activeLevel = index;
   hintIndex = 0;
@@ -185,6 +187,7 @@ function pause() {
   if (!scene || dialogKind) return;
   scene.setPaused(true);
   audio.silence();
+  audio.pauseMusic();
   openDialog('pause', `
     <div class="dialog-icon">${icon('tray')}</div>
     <h2>Пауза</h2>
@@ -200,6 +203,7 @@ function pause() {
 }
 
 function finishLevel(status: 'won' | 'lost') {
+  audio.stopMusic();
   if (tutorial) tutorialDone();
   const won = status === 'won';
   const level = levels[activeLevel];
@@ -263,7 +267,7 @@ document.addEventListener('click', event => {
     case 'close': closeDialog(); break;
     case 'resume':
       closeDialog();
-      audio.unlock();
+      audio.resumeMusic();
       scene?.setPaused(false);
       break;
   }

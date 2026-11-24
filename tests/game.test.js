@@ -13,7 +13,7 @@ import {
   setPaused,
   trayY,
 } from '../src/game.ts';
-import { hitTest, matchesTap, projectTrays } from '../src/geometry.ts';
+import { hitTest, matchesTap, PREVIEW_HEIGHT, PREVIEW_Y, projectTrays, slotCenter, trayX } from '../src/geometry.ts';
 import { foodNames, levels } from '../src/levels.ts';
 
 const [a, b, c, d, e, f] = [...new Set(levels[0].orders)];
@@ -59,11 +59,12 @@ function assertBalance(game) {
   assert.equal(remaining + game.storage.length + inProgress + 3 * game.completedOrders, expected);
 }
 
-function perform(game, id, visible = true) {
-  const action = selectFood(game, id, visible);
+function perform(game, id, resolutionMs = 0) {
+  const action = selectFood(game, id, true);
   assert.ok(action, `Expected an accepted selection of ${id}`);
   assert.equal(game.status, 'resolving');
   assertBalance(game);
+  advanceTime(game, resolutionMs);
   finishAction(game);
   assert.equal(game.status, action.outcome);
   assertBalance(game);
@@ -387,6 +388,33 @@ test('a held pointer cannot select the different item that drifts into its posit
   assert.equal(game.orders[0].collected, 0);
 });
 
+test('larger tray targets meet at the slot boundaries and exclude the preview', () => {
+  const game = newGame([a, b, c, d], [tray('visible', [
+    [food('left', a), food('middle', b), food('right', c)],
+    [food('preview', d), null, null],
+  ])]);
+  const slots = projectTrays(game, fieldHeight);
+  assert.deepEqual(slots.map(slot => slot.item.id), ['left', 'middle', 'right']);
+  for (const slot of slots) {
+    assert.ok(slot.width >= 32 && slot.height >= 70);
+    near(slot.x + slot.width / 2, trayX(0) + slotCenter(slot.slot));
+    assert.equal(hitTest(slots, visibleCenter(slot, fieldHeight), fieldHeight)?.item.id, slot.item.id);
+  }
+
+  const [left, middle, right] = slots;
+  near(left.x + left.width, middle.x);
+  near(middle.x + middle.width, right.x);
+  const onBoundary = { x: middle.x, y: middle.y + middle.height / 2 };
+  assert.equal(hitTest(slots, { ...onBoundary, x: onBoundary.x - 0.1 }, fieldHeight)?.item.id, 'left');
+  assert.equal(hitTest(slots, onBoundary, fieldHeight)?.item.id, 'middle');
+
+  const previewPoint = {
+    x: middle.x + middle.width / 2,
+    y: trayY(game, game.trays[0]) + PREVIEW_Y + PREVIEW_HEIGHT / 2,
+  };
+  assert.equal(hitTest(slots, previewPoint, fieldHeight), null);
+});
+
 function waitForWitnessItem(game, id, height) {
   const stepMs = 333;
   const fullRotationMs = Math.max(...game.columns.map(column => 1000 * column.loopHeight / column.speed));
@@ -405,6 +433,67 @@ function waitForWitnessItem(game, id, height) {
   }
   return false;
 }
+
+function findVisibleOrderMatch(game, height, prioritize) {
+  const longestRotationMs = Math.max(...game.columns.map(column => 1000 * column.loopHeight / column.speed));
+  const deadline = game.elapsedMs + longestRotationMs + 250;
+  while (game.elapsedMs <= deadline) {
+    const slots = projectTrays(game, height);
+    const choices = [];
+    for (const slot of slots) {
+      const order = game.orders.find(order => order?.foodType === slot.item.type);
+      if (!order) continue;
+      const point = visibleCenter(slot, height);
+      if (hitTest(slots, point, height)?.item.id === slot.item.id) choices.push({ slot, point, order });
+    }
+    const [choice] = choices.sort(prioritize);
+    if (choice) {
+      const { slot, point } = choice;
+      const gesture = { ...point, itemId: slot.item.id };
+      advanceTime(game, 20);
+      if (matchesTap(gesture, point, point, projectTrays(game, height), height)) return slot.item.id;
+    }
+    advanceTime(game, 250);
+  }
+  return null;
+}
+
+test('level 3 can be finished with different strategies that pick only visible matching dishes', () => {
+  const level = levels[2];
+  const expectedOrders = 140;
+  const strategies = [
+    {
+      name: 'finish started orders on a short field',
+      height: 360,
+      prioritize: (left, right) =>
+        right.order.collected - left.order.collected ||
+        Math.abs(left.point.y - 180) - Math.abs(right.point.y - 180),
+    },
+    {
+      name: 'start new orders and prefer the right side',
+      height: 640,
+      prioritize: (left, right) =>
+        left.order.collected - right.order.collected ||
+        right.point.x - left.point.x ||
+        left.point.y - right.point.y,
+    },
+  ];
+  for (const { name, height, prioritize } of strategies) {
+    const game = createGame(level);
+    setFieldHeight(game, height);
+    let followsWitness = true;
+    for (let index = 0; index < 3 * expectedOrders; index += 1) {
+      const id = findVisibleOrderMatch(game, height, prioritize);
+      assert.ok(id, `${name} stalled after ${game.completedOrders} completed orders`);
+      followsWitness &&= id === level.witness[index];
+      perform(game, id, 280);
+      assert.deepEqual(game.storage, []);
+    }
+    assert.equal(followsWitness, false, name);
+    assert.equal(game.status, 'won', name);
+    assert.equal(game.completedOrders, expectedOrders, name);
+  }
+});
 
 const expectedLevels = [
   { trays: 8, foods: 6, orders: 12, minLayers: 1, maxLayers: 2 },

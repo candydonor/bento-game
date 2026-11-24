@@ -29,12 +29,12 @@ type Sequence = {
   flightSource: Point;
 };
 
-const TRAY_FOOD_WIDTH = 26;
-const TRAY_FOOD_HEIGHT = 48;
-const PREVIEW_FOOD_WIDTH = 19;
-const PREVIEW_FOOD_HEIGHT = 24;
+const TRAY_FOOD_WIDTH = 32;
+const TRAY_FOOD_HEIGHT = 65;
+const PREVIEW_FOOD_WIDTH = 23;
+const PREVIEW_FOOD_HEIGHT = 26;
 const PREVIEW_LEFT = (TRAY_WIDTH - PREVIEW_WIDTH) / 2;
-const SAUCER_FOOD_SCALE = .85;
+const SAUCER_FOOD_SCALE = .92;
 
 const images = new Map<FoodType, HTMLImageElement>();
 const urls = new Map<FoodType, string>();
@@ -118,17 +118,19 @@ function makeTrayArt(kind: 'active' | 'empty' | 'preview'): HTMLCanvasElement {
   fillRounded(context, 4.5, 4, TRAY_WIDTH - 9, TRAY_HEIGHT - 10, 6, '#996139');
 
   const compartmentFill = gradient(context, 6, TRAY_HEIGHT - 8, '#c99668', '#e9bd8d');
-  for (let i = 0; i < 3; i++) {
-    const left = slotCenter(i) - 12;
-    fillRounded(context, left, 5.7, 24, TRAY_HEIGHT - 13.5, 3.4, '#ba8257');
-    fillRounded(context, left + .35, 7.1, 23.3, TRAY_HEIGHT - 15.2, 3, compartmentFill);
+  for (let i = 0; i < ITEMS_PER_ORDER; i++) {
+    const left = Math.max(4.5, slotCenter(i) - 15);
+    const right = Math.min(TRAY_WIDTH - 4.5, slotCenter(i) + 15);
+    const width = right - left;
+    fillRounded(context, left, 5.7, width, TRAY_HEIGHT - 13.5, 3.4, '#ba8257');
+    fillRounded(context, left + .35, 7.1, width - .7, TRAY_HEIGHT - 15.2, 3, compartmentFill);
 
     context.lineWidth = .5;
-    for (let grain = 0; grain < 5; grain++) {
+    for (let grain = 0; grain < 7; grain++) {
       const y = 12 + grain * 8 + ((i + grain) % 3);
       context.beginPath();
       context.moveTo(left + 2, y);
-      context.bezierCurveTo(left + 9, y - 1.3, left + 15, y + 1.2, left + 22, y + .2);
+      context.bezierCurveTo(left + width * .38, y - 1.3, left + width * .67, y + 1.2, right - 2, y + .2);
       context.strokeStyle = grain % 2 === 0 ? '#9f69442e' : '#fff4d74c';
       context.stroke();
     }
@@ -339,7 +341,7 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
           boardContext.lineWidth = 2;
           boardContext.strokeStyle = '#8c3756';
           boardContext.beginPath();
-          boardContext.roundRect(centerX - 11.5, y + 7, 23, TRAY_HEIGHT - 15, 4);
+          boardContext.roundRect(centerX - 13, y + 7, 26, TRAY_HEIGHT - 15, 4);
           boardContext.stroke();
         }
         const press = gesture?.itemId === item.id ? easeOut(Math.min(1, (runningTime - gesture.started) / 90)) : 0;

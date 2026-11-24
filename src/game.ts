@@ -3,7 +3,7 @@ import type { FoodType } from './levels.ts'
 export type { FoodType } from './levels.ts'
 
 export const LOGICAL_WIDTH = 390
-export const TRAY_PITCH = 89
+export const TRAY_PITCH = 110
 export const ORDER_SLOTS = 4
 export const ITEMS_PER_ORDER = 3
 export const STORAGE_SLOTS = 5

@@ -1,12 +1,14 @@
 import { activeLayer, LOGICAL_WIDTH, trayY, type FoodItem, type Game, type Tray } from './game.ts';
 
-export const TRAY_WIDTH = 88;
-export const TRAY_HEIGHT = 58;
-export const PREVIEW_Y = 58;
-export const PREVIEW_WIDTH = 70;
-export const PREVIEW_HEIGHT = 29;
-const TRAY_INSET = 5;
-const SLOT_WIDTH = (TRAY_WIDTH - TRAY_INSET * 2) / 3;
+export const TRAY_WIDTH = 94;
+export const TRAY_HEIGHT = 73;
+export const PREVIEW_Y = 75;
+export const PREVIEW_WIDTH = 82;
+export const PREVIEW_HEIGHT = 30;
+const LANE_WIDTH = LOGICAL_WIDTH / 4;
+const TRAY_GUTTER = (LANE_WIDTH - TRAY_WIDTH) / 2;
+// Give each food slot its share of the full lane, including the tray rim.
+const SLOT_WIDTH = LANE_WIDTH / 3;
 
 export type Point = { x: number; y: number };
 export type TapGesture = Point & { itemId: string };
@@ -21,12 +23,11 @@ export type ProjectedSlot = Point & {
 };
 
 export function trayX(column: number): number {
-  const laneWidth = (LOGICAL_WIDTH - 10) / 4;
-  return 5 + (laneWidth - TRAY_WIDTH) / 2 + laneWidth * column;
+  return LANE_WIDTH * column + TRAY_GUTTER;
 }
 
 export function slotCenter(slot: number): number {
-  return TRAY_INSET + SLOT_WIDTH * (slot + .5);
+  return SLOT_WIDTH * (slot + .5) - TRAY_GUTTER;
 }
 
 export function visibleTrays(game: Game, fieldHeight: number): ProjectedTray[] {
@@ -49,10 +50,10 @@ export function projectTrays(game: Game, fieldHeight: number): ProjectedSlot[] {
           item,
           trayId: tray.id,
           slot,
-          x: x + TRAY_INSET + SLOT_WIDTH * slot,
-          y: y + TRAY_INSET,
+          x: x - TRAY_GUTTER + SLOT_WIDTH * slot,
+          y,
           width: SLOT_WIDTH,
-          height: TRAY_HEIGHT - TRAY_INSET * 2,
+          height: TRAY_HEIGHT,
         });
       }
     });

@@ -3,7 +3,7 @@
   --sakura: #f7ced8;
   --sakura-deep: #99495d;
   --order-ceramic: #fffaf0;
-  --saucer-size: clamp(31px, 10.5cqw, 54px);
+  --saucer-size: clamp(36px, 12.1cqw, 61px);
   container-type: inline-size;
   position: relative;
   isolation: isolate;
@@ -24,7 +24,7 @@
   position: relative;
   z-index: 2;
   flex: none;
-  padding: max(5px, env(safe-area-inset-top, 0px)) clamp(7px, 2.4cqw, 14px) 10px;
+  padding: max(5px, env(safe-area-inset-top, 0px)) clamp(4px, 1.1cqw, 6px) 9px;
   background:
     radial-gradient(ellipse at 45% -30%, #fff6f46e, transparent 80%),
     linear-gradient(172deg, #f7ccd4, #f2b9c8);
@@ -138,7 +138,7 @@
 .game-orders {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(4px, 1.4cqw, 8px);
+  gap: clamp(3px, 1cqw, 6px);
 }
 
 .game-order {
@@ -149,8 +149,8 @@
   justify-items: center;
   width: 100%;
   min-width: 0;
-  aspect-ratio: 1;
-  padding: 7px 5px 5px;
+  aspect-ratio: .94;
+  padding: 6px 3px 5px;
   box-sizing: border-box;
   border: 1px solid #fffdfa;
   border-radius: clamp(11px, 3.7cqw, 18px);
@@ -262,7 +262,7 @@
 .game-storage {
   display: grid;
   grid-template-columns: repeat(5, var(--saucer-size));
-  gap: clamp(8px, 5.4cqw, 24px);
+  gap: clamp(7px, 4.6cqw, 22px);
   justify-content: center;
   margin: 0 auto;
 }
@@ -300,8 +300,8 @@
   z-index: 1;
   top: 50%;
   left: 50%;
-  width: 85%;
-  height: 85%;
+  width: 92%;
+  height: 92%;
   object-fit: contain;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -400,7 +400,7 @@
 @media (max-height: 520px) {
   .game-hud { padding-bottom: 6px; }
   .game-hud-top { margin-bottom: 0; }
-  .game-scene { --saucer-size: clamp(28px, 9.4cqw, 38px); }
+  .game-scene { --saucer-size: clamp(31px, 10.5cqw, 43px); }
   .game-order { max-height: 64px; padding-top: 4px; }
   .game-shelf { padding-top: 2px; padding-bottom: 8px; }
   .game-hint { padding-top: 4px; padding-bottom: 4px; }

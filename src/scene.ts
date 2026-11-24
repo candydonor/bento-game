@@ -9,7 +9,7 @@ import {
 import { foodNames, type FoodType } from './levels.ts';
 import {
   hitTest, matchesTap, projectTrays, slotCenter, visibleTrays,
-  PREVIEW_HEIGHT, PREVIEW_Y, TRAY_HEIGHT, TRAY_WIDTH,
+  PREVIEW_HEIGHT, PREVIEW_WIDTH, PREVIEW_Y, TRAY_HEIGHT, TRAY_WIDTH,
   type Point, type ProjectedSlot, type TapGesture,
 } from './geometry.ts';
 
@@ -29,12 +29,12 @@ type Sequence = {
   flightSource: Point;
 };
 
-const TRAY_FOOD_SIZE = 39;
-const PREVIEW_FOOD_SIZE = 25;
-
-function foodOffsetY(slot: number): number {
-  return slot === 1 ? 8 : -8;
-}
+const TRAY_FOOD_WIDTH = 26;
+const TRAY_FOOD_HEIGHT = 48;
+const PREVIEW_FOOD_WIDTH = 19;
+const PREVIEW_FOOD_HEIGHT = 24;
+const PREVIEW_LEFT = (TRAY_WIDTH - PREVIEW_WIDTH) / 2;
+const SAUCER_FOOD_SCALE = .85;
 
 const images = new Map<FoodType, HTMLImageElement>();
 const urls = new Map<FoodType, string>();
@@ -100,10 +100,11 @@ function makeTrayArt(kind: 'active' | 'empty' | 'preview'): HTMLCanvasElement {
   context.shadowBlur = 4;
   context.shadowOffsetY = 2;
   if (kind === 'preview') {
-    fillRounded(context, 6, 0, TRAY_WIDTH - 12, PREVIEW_HEIGHT, 6, '#bf9b77');
+    fillRounded(context, PREVIEW_LEFT, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT, 7, '#bda087');
     context.shadowColor = 'transparent';
-    fillRounded(context, 6, 0, TRAY_WIDTH - 12, PREVIEW_HEIGHT - 2, 6, '#fff8e6');
-    fillRounded(context, 9, 3, TRAY_WIDTH - 18, PREVIEW_HEIGHT - 7, 3, '#f1e4cd');
+    fillRounded(context, PREVIEW_LEFT, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT - 2, 7, '#fffaf1');
+    fillRounded(context, PREVIEW_LEFT + 3, 2.5, PREVIEW_WIDTH - 6, PREVIEW_HEIGHT - 7, 4,
+      gradient(context, 2.5, PREVIEW_HEIGHT - 5, '#e9dcc7', '#f8efe0'));
     return buffer;
   }
 
@@ -146,15 +147,23 @@ function drawFood(
   item: FoodItem,
   x: number,
   y: number,
-  size: number,
+  maxWidth: number,
+  maxHeight: number,
   angle = 0,
 ) {
   const image = art(item.type);
   if (!image.complete || !image.naturalWidth) return;
+  const fit = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+  const width = image.naturalWidth * fit;
+  const height = image.naturalHeight * fit;
+  if (!angle) {
+    context.drawImage(image, x - width / 2, y - height / 2, width, height);
+    return;
+  }
   context.save();
   context.translate(x, y);
-  if (angle) context.rotate(angle);
-  context.drawImage(image, -size / 2, -size / 2, size, size);
+  context.rotate(angle);
+  context.drawImage(image, -width / 2, -height / 2, width, height);
   context.restore();
 }
 
@@ -200,7 +209,7 @@ function easeOut(value: number) {
 function pointForSlot(slot: ProjectedSlot): Point {
   return {
     x: slot.x + slot.width / 2,
-    y: slot.y + slot.height / 2 - 1.5 + foodOffsetY(slot.slot),
+    y: slot.y + slot.height / 2 - 1,
   };
 }
 
@@ -312,7 +321,9 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       if (preview) {
         boardContext.drawImage(previewArt, x - 3, y + PREVIEW_Y - 2, TRAY_WIDTH + 6, PREVIEW_HEIGHT + 7);
         preview.forEach((item, slot) => {
-          if (item) drawFood(boardContext, item, x + slotCenter(slot), y + PREVIEW_Y + PREVIEW_HEIGHT / 2 - 1, PREVIEW_FOOD_SIZE);
+          if (!item) return;
+          const centerX = x + PREVIEW_LEFT + 4 + (PREVIEW_WIDTH - 8) * (slot + .5) / ITEMS_PER_ORDER;
+          drawFood(boardContext, item, centerX, y + PREVIEW_Y + PREVIEW_HEIGHT / 2 - 1, PREVIEW_FOOD_WIDTH, PREVIEW_FOOD_HEIGHT);
         });
       }
       if (!active || suppress) continue;
@@ -322,7 +333,7 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       for (const [slot, item] of active.entries()) {
         if (!item) continue;
         const centerX = x + slotCenter(slot);
-        const centerY = y + TRAY_HEIGHT / 2 - 1.5 + foodOffsetY(slot);
+        const centerY = y + TRAY_HEIGHT / 2 - 1;
         const keyboardSelected = keyboardId === item.id && document.activeElement === board;
         if (keyboardSelected) {
           boardContext.lineWidth = 2;
@@ -333,7 +344,8 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
         }
         const press = gesture?.itemId === item.id ? easeOut(Math.min(1, (runningTime - gesture.started) / 90)) : 0;
         boardContext.globalAlpha = motionPreference.matches ? 1 : .25 + grow * .75;
-        drawFood(boardContext, item, centerX, centerY, (TRAY_FOOD_SIZE - 6 * press) * (.9 + grow * .1));
+        const size = (1 - .13 * press) * (.9 + grow * .1);
+        drawFood(boardContext, item, centerX, centerY, TRAY_FOOD_WIDTH * size, TRAY_FOOD_HEIGHT * size);
         boardContext.globalAlpha = 1;
       }
     }
@@ -362,12 +374,15 @@ export function mountScene(container: HTMLElement, options: SceneOptions) {
       const x = start.x + (target.x - bounds.left - start.x) * position;
       const lift = reduced ? 0 : Math.min(59, Math.abs(target.y - bounds.top - start.y) * .24);
       const y = start.y + (target.y - bounds.top - start.y) * position - lift * Math.sin(Math.PI * position);
-      const fromSize = event.from.kind === 'tray'
-        ? TRAY_FOOD_SIZE * scale
-        : storageImages[event.from.slot].getBoundingClientRect().width;
-      const toSize = event.to.kind === 'order' ? targetRect.width : targetRect.width * 1.1;
-      const size = fromSize + (toSize - fromSize) * position;
-      drawFood(context, event.item, x, y, size, (reduced ? 0 : .23) * Math.sin(Math.PI * position));
+      const saucerSource = event.from.kind === 'storage'
+        ? storageImages[event.from.slot].getBoundingClientRect()
+        : null;
+      const fromWidth = saucerSource?.width ?? TRAY_FOOD_WIDTH * scale;
+      const fromHeight = saucerSource?.height ?? TRAY_FOOD_HEIGHT * scale;
+      const targetScale = event.to.kind === 'storage' ? SAUCER_FOOD_SCALE : 1;
+      const flightWidth = fromWidth + (targetRect.width * targetScale - fromWidth) * position;
+      const flightHeight = fromHeight + (targetRect.height * targetScale - fromHeight) * position;
+      drawFood(context, event.item, x, y, flightWidth, flightHeight, (reduced ? 0 : .23) * Math.sin(Math.PI * position));
     }
 
     if (impact) {

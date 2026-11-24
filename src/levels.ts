@@ -1,19 +1,47 @@
-import { ITEMS_PER_ORDER, TRAY_PITCH } from './game.ts'
+import { ITEMS_PER_ORDER, ORDER_SLOTS, TRAY_PITCH } from './game.ts'
 import type { ColumnConfig, Layer, Level, Tray } from './game.ts'
 
+// Dishes are ordered by the level at which they join the menu.
 export const foodNames = {
-  corndog: 'Кукурузный корндог',
-  pancakes: 'Оладьи',
-  maki: 'Маки',
+  corndog: 'Корндог',
+  pancakes: 'Оладьи с кунжутом',
+  maki: 'Роллы с лососем',
   onigiri: 'Онигири',
-  ube: 'Батончик убэ',
-  sauce: 'Соус',
+  ube: 'Фиолетовые пирожные',
+  sauce: 'Напиток с зелёной крышкой',
   tamago: 'Тамаго',
-  matcha: 'Пирожное матча',
+  matcha: 'Пирожные матча',
   dango: 'Данго',
-  skewer: 'Овощная шпажка',
-  tempura: 'Креветка темпура',
-  curry: 'Карри',
+  skewer: 'Шашлычок с зелёным перцем',
+  tempura: 'Хрустящая куриная ножка',
+  curry: 'Токпокки',
+
+  'green-roll': 'Зелёный рулет',
+  'pink-flower': 'Цветочные вагаси',
+  'soft-serve': 'Мягкое мороженое',
+  'sausage-skewer': 'Сосиски на шпажке',
+  dumplings: 'Паровые булочки',
+  'red-cabbage': 'Капустные свёртки',
+
+  'green-square': 'Бисквит матча',
+  'glazed-dango': 'Данго в глазури',
+  kimbap: 'Кимбап',
+  'sakura-mochi': 'Сакура-моти',
+  'milk-drink': 'Молочный напиток',
+  'yellow-skewer': 'Жёлтая шпажка',
+
+  'strawberry-mochi': 'Клубничное моти',
+  'fish-cakes': 'Тайяки',
+  'green-onigiri': 'Зелёное онигири',
+  'chocolate-toast': 'Шоколадный тост',
+  parfait: 'Парфе',
+  'orange-cups': 'Апельсиновый десерт',
+
+  inari: 'Инари',
+  'colorful-buns': 'Цветные булочки',
+  musubi: 'Мусуби',
+  'layered-strips': 'Слоёные полоски',
+  dorayaki: 'Дораяки',
 } as const
 
 export type FoodType = keyof typeof foodNames
@@ -97,19 +125,19 @@ const main: LevelLayout = {
 }
 
 const extendedLevels = [
-  { id: 3, name: 'Обеденный час', orderCount: 140, speed: 17 },
-  { id: 4, name: 'Полный зал', orderCount: 220, speed: 19 },
-  { id: 5, name: 'Вечерняя смена', orderCount: 320, speed: 21 },
-  { id: 6, name: 'Праздничный стол', orderCount: 450, speed: 23 },
-  { id: 7, name: 'Большой банкет', orderCount: 600, speed: 25 },
+  { id: 3, name: 'Обеденный час', orderCount: 140, foodCount: 18, speed: 17 },
+  { id: 4, name: 'Полный зал', orderCount: 220, foodCount: 24, speed: 19 },
+  { id: 5, name: 'Вечерняя смена', orderCount: 320, foodCount: 30, speed: 21 },
+  { id: 6, name: 'Праздничный стол', orderCount: 450, foodCount: 35, speed: 23 },
+  { id: 7, name: 'Большой банкет', orderCount: 600, foodCount: 35, speed: 25 },
 ]
 
-function extendedLayout({ id, name, orderCount, speed }: typeof extendedLevels[number]): LevelLayout {
-  const foodTypes = Object.keys(foodNames) as FoodType[]
-  const orderStrides = [1, 5, 7, 11]
+function extendedLayout({ id, name, orderCount, foodCount, speed }: typeof extendedLevels[number]): LevelLayout {
+  const foodTypes = (Object.keys(foodNames) as FoodType[]).slice(0, foodCount)
+  const orderStrides = [1, 11, 13, 17, 19]
   const orders = Array.from({ length: orderCount }, (_, index) => {
-    // Each full round serves all twelve dishes. A round changes its starting
-    // dish and traversal order, so the queues can differ between levels.
+    // These traversal steps are coprime to each menu size, so a full round
+    // serves every dish once before its starting dish and step change.
     const round = Math.floor(index / foodTypes.length)
     const stride = orderStrides[(round + id) % orderStrides.length]
     return foodTypes[(id * 2 + round * 5 + index % foodTypes.length * stride) % foodTypes.length]
@@ -142,7 +170,7 @@ function extendedLayout({ id, name, orderCount, speed }: typeof extendedLevels[n
   return {
     id,
     name,
-    description: `Двенадцать блюд и ${orderCount} заказов.`,
+    description: `${foodCount} видов еды и ${orderCount} заказов.`,
     layout,
     phases: [10 + id, 31 - id, 6 + id, 26 + id],
     rowsPerGroup: 1,
@@ -169,7 +197,7 @@ function buildLevel(config: LevelLayout): Level {
 
   // Reserve one item from the first queued order for an early trip to storage.
   // The rest of the solution follows the finite order queue.
-  const firstQueued = columns.length
+  const firstQueued = ORDER_SLOTS
   const solutionTypes = orders.flatMap((type, index) => Array<FoodType>(
     index === firstQueued ? ITEMS_PER_ORDER - 1 : ITEMS_PER_ORDER,
   ).fill(type))

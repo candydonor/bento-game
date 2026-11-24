@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import {
   activeLayer,
@@ -12,7 +14,7 @@ import {
   trayY,
 } from '../src/game.ts';
 import { hitTest, matchesTap, projectTrays } from '../src/geometry.ts';
-import { levels } from '../src/levels.ts';
+import { foodNames, levels } from '../src/levels.ts';
 
 const [a, b, c, d, e, f] = [...new Set(levels[0].orders)];
 const directions = [-1, 1, -1, 1];
@@ -407,11 +409,37 @@ function waitForWitnessItem(game, id, height) {
 const expectedLevels = [
   { trays: 8, foods: 6, orders: 12, minLayers: 1, maxLayers: 2 },
   { trays: 40, foods: 12, orders: 80, minLayers: 2, maxLayers: 4 },
-  ...[140, 220, 320, 450, 600].map(orders => ({ trays: 24, foods: 12, orders, minLayers: 2 })),
+  ...[[140, 18], [220, 24], [320, 30], [450, 35], [600, 35]]
+    .map(([orders, foods]) => ({ trays: 24, foods, orders, minLayers: 2 })),
 ];
 
 test('all seven levels are present in progression order', () => {
   assert.deepEqual(levels.map(level => level.id), [1, 2, 3, 4, 5, 6, 7]);
+});
+
+test('the full food catalogue has one distinct local WebP per type', async () => {
+  const catalogue = Object.keys(foodNames);
+  assert.equal(catalogue.length, 35);
+  assert.deepEqual(new Set(levels.at(-1).orders), new Set(catalogue));
+
+  const spriteFolder = new URL('../assets/food/', import.meta.url);
+  const expectedFiles = catalogue.map(type => `${type}.webp`).sort();
+  const files = await readdir(spriteFolder, { withFileTypes: true });
+  assert.deepEqual(
+    files.filter(file => file.isFile() && file.name.endsWith('.webp')).map(file => file.name).sort(),
+    expectedFiles,
+  );
+  const digests = new Set();
+  for (const name of expectedFiles) {
+    const sprite = await readFile(new URL(name, spriteFolder));
+    assert.ok(sprite.length > 12, `${name} is empty or truncated`);
+    assert.equal(sprite.toString('ascii', 0, 4), 'RIFF', `${name} is missing its RIFF header`);
+    assert.equal(sprite.toString('ascii', 8, 12), 'WEBP', `${name} is missing its WebP signature`);
+    assert.equal(sprite.readUInt32LE(4) + 8, sprite.length, `${name} has an invalid RIFF length`);
+    const digest = createHash('sha256').update(sprite).digest('hex');
+    assert.ok(!digests.has(digest), `${name} duplicates another sprite`);
+    digests.add(digest);
+  }
 });
 
 for (const [index, expected] of expectedLevels.entries()) {
@@ -430,6 +458,7 @@ for (const [index, expected] of expectedLevels.entries()) {
 
     const types = new Set([...items.map(item => item.type), ...level.orders]);
     for (const type of types) {
+      assert.ok(Object.hasOwn(foodNames, type), `Unknown food type ${type}`);
       assert.equal(items.filter(item => item.type === type).length,
         3 * level.orders.filter(foodType => foodType === type).length);
     }
@@ -442,9 +471,11 @@ for (const [index, expected] of expectedLevels.entries()) {
     const height = 640;
     const game = createGame(level);
     setFieldHeight(game, height);
-    if (index === 0) {
-      assert.ok(projectTrays(game, height).some(slot => game.orders.some(order => order?.foodType === slot.item.type)));
-    }
+    const startingSlots = projectTrays(game, height);
+    assert.ok(startingSlots.some(slot =>
+      game.orders.some(order => order?.foodType === slot.item.type) &&
+      hitTest(startingSlots, visibleCenter(slot, height), height)?.item.id === slot.item.id
+    ), 'Expected a selectable food item matching an initial order');
 
     for (const [actionIndex, id] of level.witness.entries()) {
       assert.ok(waitForWitnessItem(game, id, height), `Witness step ${actionIndex + 1}: ${id} did not become selectable`);

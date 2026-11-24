@@ -3,6 +3,8 @@
   --sakura: #f7ced8;
   --sakura-deep: #99495d;
   --order-ceramic: #fffaf0;
+  --saucer-size: clamp(31px, 10.5cqw, 54px);
+  container-type: inline-size;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -22,7 +24,7 @@
   position: relative;
   z-index: 2;
   flex: none;
-  padding: max(5px, env(safe-area-inset-top, 0px)) clamp(8px, 2.8vw, 14px) 10px;
+  padding: max(5px, env(safe-area-inset-top, 0px)) clamp(7px, 2.4cqw, 14px) 10px;
   background:
     radial-gradient(ellipse at 45% -30%, #fff6f46e, transparent 80%),
     linear-gradient(172deg, #f7ccd4, #f2b9c8);
@@ -136,7 +138,7 @@
 .game-orders {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(5px, 1.6vw, 8px);
+  gap: clamp(4px, 1.4cqw, 8px);
 }
 
 .game-order {
@@ -145,24 +147,28 @@
   align-items: center;
   grid-template-rows: minmax(0, 1fr) auto;
   justify-items: center;
+  width: 100%;
   min-width: 0;
-  height: clamp(77px, 22vw, 103px);
-  padding: 6px 2px 5px;
+  aspect-ratio: 1;
+  padding: 7px 5px 5px;
   box-sizing: border-box;
   border: 1px solid #fffdfa;
-  border-radius: 16px;
-  background: linear-gradient(#fffaf0, #fff7e6);
-  box-shadow: 0 3px 0 #c58c7a45, 0 5px 10px #a35f621a, inset 0 -3px 0 #edddce;
+  border-radius: clamp(11px, 3.7cqw, 18px);
+  background:
+    radial-gradient(ellipse at 45% 0%, #ffffffca, transparent 60%),
+    linear-gradient(163deg, #fffbee 32%, #f5e6d2);
+  box-shadow: 0 2px 0 #b0807045, 0 4px 9px #82514821, inset 0 -2px 0 #d9c3a9;
 }
 
 .game-order::before {
   content: '';
   position: absolute;
-  inset: 5px 5px 7px;
+  inset: 4px 4px 5px;
   pointer-events: none;
-  border: 1px solid #eddfd0;
-  border-radius: 10px;
-  box-shadow: inset 0 1px 3px #dacaac37;
+  border: 1px solid #e4d3b9;
+  border-radius: clamp(7px, 2.8cqw, 13px);
+  background: linear-gradient(149deg, #eadcc461, #fffdf263);
+  box-shadow: 0 1px 0 #fffdf8d9, inset 0 1px 3px #b5a18420;
 }
 
 .game-order.empty {
@@ -172,30 +178,55 @@
 .game-order-food {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-self: stretch;
   width: 100%;
+  min-height: 0;
+}
+
+.game-order-food::after {
+  content: '';
+  position: absolute;
+  right: 1px;
+  bottom: -4px;
+  z-index: -1;
+  width: 8px;
+  height: 5px;
+  transform: rotate(-27deg);
+  border-radius: 100% 0;
+  background: #d8c4a55e;
+  box-shadow: 0 1px 0 #fffdf1;
+  pointer-events: none;
 }
 
 .game-order-item {
-  position: absolute;
-  top: 29%;
-  width: min(44%, 44px);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
+  position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
-.game-order-item:first-child { left: 24%; }
-.game-order-item:nth-child(2) { left: 76%; }
-.game-order-item:last-child { left: 50%; top: 73%; }
+.game-order-item + .game-order-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  border-left: 1px solid #dbc8a967;
+  box-shadow: 1px 0 0 #fffdf28f;
+  pointer-events: none;
+}
 
 .game-order-item img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-  opacity: .36;
-  filter: saturate(.7);
+  opacity: .42;
+  filter: saturate(.73);
 }
 
 .game-order-item.filled img { opacity: 1; filter: none; }
@@ -204,7 +235,7 @@
   z-index: 1;
   min-width: 2.1em;
   padding: 1px 6px 2px;
-  background: #f5e6d2;
+  background: #f3e4cf;
   border-radius: 8px;
   color: #674630;
   font: 800 clamp(.59rem, 2.1vw, .69rem) / 1.12 system-ui, sans-serif;
@@ -218,8 +249,8 @@
   position: relative;
   z-index: 1;
   flex: none;
-  min-height: 62px;
-  padding: 3px 0 6px;
+  min-height: calc(var(--saucer-size) + 17px);
+  padding: 3px 0 10px;
   border-top: 1px solid #f7dcaf;
   border-bottom: 3px solid #9e6242;
   background:
@@ -230,51 +261,38 @@
 
 .game-storage {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(5px, 2.6vw, 13px);
-  max-width: 322px;
-  width: 83%;
-  height: 46px;
+  grid-template-columns: repeat(5, var(--saucer-size));
+  gap: clamp(8px, 5.4cqw, 24px);
+  justify-content: center;
   margin: 0 auto;
-  justify-items: center;
 }
 
 .game-storage-slot {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  max-width: 53px;
-  height: 46px;
+  width: var(--saucer-size);
+  aspect-ratio: 1;
 }
 
 .game-storage-slot::before,
 .game-storage-slot::after {
   content: '';
   position: absolute;
-  top: 53%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
 }
 
 .game-storage-slot::before {
-  width: 100%;
-  height: 37px;
-  max-width: 50px;
-  background: linear-gradient(#fffdf4, #faf0df);
-  border: 1px solid #fffaf0;
-  box-sizing: border-box;
-  box-shadow: 0 3px 0 #b78055, 0 4px 5px #79452042;
+  inset: 0;
+  border: 1px solid #fffdf3;
+  border-radius: clamp(8px, 2.3cqw, 13px);
+  background: linear-gradient(155deg, #fffdf2 25%, #f5e8d1);
+  box-shadow: 0 2px 0 #a9724e, 0 3px 5px #79452042, inset 0 -1px 0 #e5cfae;
 }
 
 .game-storage-slot::after {
-  width: 72%;
-  height: 24px;
-  max-width: 35px;
-  border: 1px solid #ece1ce;
-  background: #f5e9d8;
-  box-shadow: inset 0 2px 3px #b995722b;
+  inset: 4px;
+  border-radius: clamp(5px, 1.6cqw, 9px);
+  border: 1px solid #e8d8bf;
+  background: linear-gradient(147deg, #efdfc6, #f9f2e2);
+  box-shadow: 0 1px 0 #fff8ea, inset 0 1px 2px #b9957225;
 }
 
 .game-storage-slot img {
@@ -282,8 +300,9 @@
   z-index: 1;
   top: 50%;
   left: 50%;
-  width: min(110%, 52px);
-  max-width: none;
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -381,12 +400,9 @@
 @media (max-height: 520px) {
   .game-hud { padding-bottom: 6px; }
   .game-hud-top { margin-bottom: 0; }
-  .game-order { height: 57px; padding-top: 4px; }
-  .game-order-item { top: 50%; width: min(35%, 32px); }
-  .game-order-item:first-child { left: 17%; }
-  .game-order-item:nth-child(2) { left: 50%; }
-  .game-order-item:last-child { left: 83%; top: 50%; }
-  .game-shelf { min-height: 55px; padding: 0 0 3px; }
+  .game-scene { --saucer-size: clamp(28px, 9.4cqw, 38px); }
+  .game-order { max-height: 64px; padding-top: 4px; }
+  .game-shelf { padding-top: 2px; padding-bottom: 8px; }
   .game-hint { padding-top: 4px; padding-bottom: 4px; }
 }
 
